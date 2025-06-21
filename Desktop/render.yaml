@@ -1,0 +1,668 @@
+
+
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gewerbe Dashboard – Gebäudereinigung & Hausmeisterservice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    .modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 30; }
+    .modal-content { background: white; padding: 1.5rem; border-radius: 0.5rem; max-width: 28rem; width: 100%; }
+    .modal.hidden { display: none; }
+    body.dark .modal-content { background: #1e1e2e; color: #e4e4e7; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <aside class="bg-slate-800 text-gray-100 w-60 flex-shrink-0 flex flex-col">
+    <div class="p-4 flex items-center gap-2 text-xl font-semibold"><i class="fa-solid fa-broom"></i> Gewerbe Dashboard</div>
+    <nav class="flex-1 overflow-y-auto">
+      <button onclick="showSection('overview')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-gauge-high"></i> Pregled</button>
+      <button onclick="showSection('finance')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-coins"></i> Financije</button>
+      <button onclick="showSection('clients')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-users"></i> Klijenti</button>
+      <button onclick="showSection('employees')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-user-gear"></i> Zaposlenici</button>
+      <button onclick="showSection('calendar')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-calendar-days"></i> Kalendar</button>
+      <button onclick="showSection('equipment')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-screwdriver-wrench"></i> Oprema</button>
+    </nav>
+    <div class="p-4">
+      <button onclick="toggleDark()" class="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded"><i class="fa-solid fa-moon"></i> Tamni mod</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+      <h1 id="sectionTitle" class="text-2xl font-bold">Pregled</h1>
+      <div class="flex gap-2 items-center">
+        <button onclick="generateData()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-database"></i> Generiraj</button>
+        <button onclick="exportCurrentSection()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+        <button onclick="loadInitialData()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-rotate"></i> Inicijalni podaci</button>
+        <button onclick="resetData()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-ban"></i> Resetiraj sve</button>
+        <!-- FULLSCREEN BUTTON DODAN OVDJE -->
+        <button onclick="toggleFullScreen()" title="Prikaži na cijelom ekranu" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded transition">
+          <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ...ostatak sadržaja ostaje isti kao u tvojem kodu... -->
+    <!-- (sve tvoje sekcije, modali itd. copy-paste bez promjena) -->
+    <!-- ... -->
+
+    <!-- Sve tvoje sekcije iz originalnog koda (overview, finance, itd) ovdje -->
+
+    <!-- Overlay & Modals -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden"></div>
+    <!-- Svi tvoji modali kao prije -->
+    <!-- ... -->
+
+    <!-- Svi tvoji skripti kao prije (sve ispod ovog komentara) -->
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com">
+    // Load initial data
+    function loadInitialData() {
+      if (!confirm('Učitati inicijalne testne podatke? Ovo će prebrisati postojeće.')) return;
+      revenue = initRevenue.slice();
+      cost = initCost.slice();
+      buildings = initBuildings.slice();
+      hours = initHours.slice();
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+    // Reset all data to zero
+    function resetData() {
+      if (!confirm('Resetirati sve podatke na nulu?')) return;
+      revenue = Array(12).fill(0);
+      cost = Array(12).fill(0);
+      buildings = Array(12).fill(0);
+      hours = Array(12).fill(0);
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+    // Load initial data
+    function loadInitialData() {
+      if (!confirm('Učitati inicijalne testne podatke? Ovo će prebrisati postojeće.')) return;
+      revenue = initRevenue.slice();
+      cost = initCost.slice();
+      buildings = initBuildings.slice();
+      hours = initHours.slice();
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+    // Reset all data to zero
+    function resetData() {
+      if (!confirm('Resetirati sve podatke na nulu?')) return;
+      revenue = Array(12).fill(0);
+      cost = Array(12).fill(0);
+      buildings = Array(12).fill(0);
+      hours = Array(12).fill(0);
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+  </script>
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js">
+    // Load initial data
+    function loadInitialData() {
+      if (!confirm('Učitati inicijalne testne podatke? Ovo će prebrisati postojeće.')) return;
+      revenue = initRevenue.slice();
+      cost = initCost.slice();
+      buildings = initBuildings.slice();
+      hours = initHours.slice();
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+    // Reset all data to zero
+    function resetData() {
+      if (!confirm('Resetirati sve podatke na nulu?')) return;
+      revenue = Array(12).fill(0);
+      cost = Array(12).fill(0);
+      buildings = Array(12).fill(0);
+      hours = Array(12).fill(0);
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+  </script>
+  <style>
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    /* Modal */
+    .modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 30; }
+    .modal-content { background: white; padding: 1.5rem; border-radius: 0.5rem; max-width: 28rem; width: 100%; }
+    .modal.hidden { display: none; }
+    body.dark .modal-content { background: #1e1e2e; color: #e4e4e7; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <aside class="bg-slate-800 text-gray-100 w-60 flex-shrink-0 flex flex-col">
+    <div class="p-4 flex items-center gap-2 text-xl font-semibold"><i class="fa-solid fa-broom"></i> Gewerbe Dashboard</div>
+    <nav class="flex-1 overflow-y-auto">
+      <button onclick="showSection('overview')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-gauge-high"></i> Pregled</button>
+      <button onclick="showSection('finance')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-coins"></i> Financije</button>
+      <button onclick="showSection('clients')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-users"></i> Klijenti</button>
+      <button onclick="showSection('employees')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-user-gear"></i> Zaposlenici</button>
+      <button onclick="showSection('calendar')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-calendar-days"></i> Kalendar</button>
+      <button onclick="showSection('equipment')" class="w-full text-left px-4 py-2 hover:bg-slate-700"><i class="fa-solid fa-screwdriver-wrench"></i> Oprema</button>
+    </nav>
+    <div class="p-4">
+      <button onclick="toggleDark()" class="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded"><i class="fa-solid fa-moon"></i> Tamni mod</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+      <h1 id="sectionTitle" class="text-2xl font-bold">Pregled</h1>
+      <div class="flex gap-2">
+        <button onclick="generateData()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-database"></i> Generiraj</button>
+        <button onclick="exportCurrentSection()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+        <button onclick="loadInitialData()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-rotate"></i> Inicijalni podaci</button>
+        <button onclick="resetData()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-ban"></i> Resetiraj sve</button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <!-- Overview -->
+      <section id="overviewSection" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Aktivni klijenti</div>
+            <div id="kpiClients" class="text-3xl font-semibold">0</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Zaposlenici</div>
+            <div id="kpiEmployees" class="text-3xl font-semibold">0</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Zadaci</div>
+            <div id="kpiTasks" class="text-3xl font-semibold">0</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Prihod (EUR)</div>
+            <div id="kpiRevenue" class="text-3xl font-semibold">0</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Ukupno zgrada</div>
+            <div id="kpiBuildings" class="text-3xl font-semibold">0</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-4 rounded shadow text-center">
+            <div class="text-sm text-gray-500">Prosječna satnica</div>
+            <div id="kpiAvgHourly" class="text-3xl font-semibold">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Finance -->
+      <section id="financeSection" class="hidden space-y-6">
+        <!-- Finance Data Input -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded shadow">
+          <h2 class="text-xl font-semibold mb-4">Podaci</h2>
+          <div class="overflow-x-auto mb-4">
+            <table id="financeTable" class="min-w-full text-sm">
+              <thead>
+                <tr class="bg-gray-200 dark:bg-slate-700">
+                  <th class="px-2 py-1">Mjesec</th>
+                  <th class="px-2 py-1">Zgrade</th>
+                  <th class="px-2 py-1">Sati</th>
+                  <th class="px-2 py-1">Prihod</th>
+                  <th class="px-2 py-1">Trošak</th>
+                  <th class="px-2 py-1">Neto</th>
+                  <th class="px-2 py-1">Satnica</th>
+                </tr>
+              </thead>
+              <tbody id="financeRows"></tbody>
+            </table>
+          </div>
+          <button onclick="updateFinance()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Ažuriraj podatke</button>
+        </div>
+        <!-- Finance Charts -->
+        <div class="flex flex-col lg:flex-row gap-6">
+          <div class="flex-1 bg-white dark:bg-slate-800 p-4 rounded shadow">
+            <h2 class="text-xl font-semibold mb-4">Prihodi, Troškovi & Neto</h2>
+            <canvas id="financeChart" height="200"></canvas>
+          </div>
+          <div class="flex-1 bg-white dark:bg-slate-800 p-4 rounded shadow">
+            <h2 class="text-xl font-semibold mb-4">Satnica po mjesecu</h2>
+            <canvas id="hourlyChart" height="200"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Clients -->
+      <section id="clientsSection" class="hidden space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Klijenti</h2>
+          <button onclick="openModal('clientModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">
+            <i class="fa-solid fa-plus"></i> Dodaj
+          </button>
+        </div>
+        <input oninput="filterTable('clientsTable', this.value)" type="text" placeholder="Brza pretraga..." class="border px-2 py-1 rounded w-full mb-2">
+        <div class="overflow-x-auto">
+          <table id="clientsTable" class="min-w-full text-sm bg-white dark:bg-slate-800 rounded shadow">
+            <thead>
+              <tr class="bg-gray-200 dark:bg-slate-700">
+                <th class="px-2 py-1">Ime</th><th class="px-2 py-1">Adresa</th><th class="px-2 py-1">Telefon</th><th class="px-2 py-1">Akcija</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Employees -->
+      <section id="employeesSection" class="hidden space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Zaposlenici</h2>
+          <button onclick="openModal('employeeModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">
+            <i class="fa-solid fa-plus"></i> Dodaj
+          </button>
+        </div>
+        <input oninput="filterTable('employeesTable', this.value)" type="text" placeholder="Brza pretraga..." class="border px-2 py-1 rounded w-full mb-2">
+        <div class="overflow-x-auto">
+          <table id="employeesTable" class="min-w-full text-sm bg-white dark:bg-slate-800 rounded shadow">
+            <thead>
+              <tr class="bg-gray-200 dark:bg-slate-700">
+                <th class="px-2 py-1">Ime</th><th class="px-2 py-1">Pozicija</th><th class="px-2 py-1">Ocjena</th><th class="px-2 py-1">Akcija</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Calendar -->
+      <section id="calendarSection" class="hidden space-y-4">
+        <h2 class="text-xl font-semibold">Kalendar</h2>
+        <div id="calendar" class="bg-white dark:bg-slate-800 rounded shadow overflow-hidden"></div>
+      </section>
+
+      <!-- Equipment -->
+      <section id="equipmentSection" class="hidden space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Oprema</h2>
+          <button onclick="openModal('equipmentModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">
+            <i class="fa-solid fa-plus"></i> Dodaj
+          </button>
+        </div>
+        <input oninput="filterTable('equipmentTable', this.value)" type="text" placeholder="Brza pretraga..." class="border px-2 py-1 rounded w-full mb-2">
+        <div class="overflow-x-auto">
+          <table id="equipmentTable" class="min-w-full text-sm bg-white dark:bg-slate-800 rounded shadow">
+            <thead>
+              <tr class="bg-gray-200 dark:bg-slate-700">
+                <th class="px-2 py-1">Naziv</th><th class="px-2 py-1">Status</th><th class="px-2 py-1">Akcija</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Overlay & Modals -->
+  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden"></div>
+
+  <!-- Client Modal -->
+  <div id="clientModal" class="modal hidden"><div class="modal-content">
+    <h3 class="text-lg font-semibold mb-4">Dodaj klijenta</h3>
+    <input id="clientName" type="text" placeholder="Ime" class="w-full border px-3 py-2 rounded mb-2">
+    <input id="clientAddress" type="text" placeholder="Adresa" class="w-full border px-3 py-2 rounded mb-2">
+    <input id="clientPhone" type="text" placeholder="Telefon" class="w-full border px-3 py-2 rounded mb-2">
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeModal('clientModal')" class="px-4 py-2">Odustani</button>
+      <button onclick="addClient()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Spremi</button>
+    </div>
+  </div></div>
+
+  <!-- Employee Modal -->
+  <div id="employeeModal" class="modal hidden"><div class="modal-content">
+    <h3 class="text-lg font-semibold mb-4">Dodaj zaposlenika</h3>
+    <input id="employeeName" type="text" placeholder="Ime" class="w-full border px-3 py-2 rounded mb-2">
+    <input id="employeeRole" type="text" placeholder="Pozicija" class="w-full border px-3 py-2 rounded mb-2">
+    <input id="employeeRating" type="number" min="1" max="5" placeholder="Ocjena" class="w-full border px-3 py-2 rounded mb-2">
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeModal('employeeModal')" class="px-4 py-2">Odustani</button>
+      <button onclick="addEmployee()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Spremi</button>
+    </div>
+  </div></div>
+
+  <!-- Equipment Modal -->
+  <div id="equipmentModal" class="modal hidden"><div class="modal-content">
+    <h3 class="text-lg font-semibold mb-4">Dodaj opremu</h3>
+    <input id="equipmentName" type="text" placeholder="Naziv" class="w-full border px-3 py-2 rounded mb-2">
+    <input id="equipmentStatus" type="text" placeholder="Status" class="w-full border px-3 py-2 rounded mb-2">
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeModal('equipmentModal')" class="px-4 py-2">Odustani</button>
+      <button onclick="addEquipment()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Spremi</button>
+    </div>
+  </div></div>
+
+  <script>
+    // Data arrays
+    const months = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
+    const initBuildings = [2,3,4,5,6,7,8,9,10,11,12,13];
+    const initHours = [10,15,20,25,30,40,50,60,65,70,75,80];
+    const initRevenue = [400,600,800,1000,1200,1600,2000,2400,2600,2800,3000,3200];
+    const initCost    = [950,950,975,975,1000,1050,1100,1150,1175,1200,1250,1300];
+
+    // State
+    let buildings = [], hours = [], revenue = [], cost = [];
+    let netProfit = [], hourlyRate = [];
+    let clients = JSON.parse(localStorage.getItem('clients')||'[]');
+    let employees = JSON.parse(localStorage.getItem('employees')||'[]');
+    let equipment = JSON.parse(localStorage.getItem('equipment')||'[]');
+    let calendarInstance, financeChart, hourlyChart;
+
+    // Persistence
+    function saveData() {
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      updateKPIs();
+    }
+
+
+
+      // ...tvoj postojeći kod ostaje ovdje...
+
+      // FULLSCREEN FUNKCIJA (dodano na dno, ne mijenja tvoj kod!)
+      function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().then(() => {
+            document.getElementById('fullscreenIcon').classList.remove('fa-expand');
+            document.getElementById('fullscreenIcon').classList.add('fa-compress');
+          });
+        } else {
+          document.exitFullscreen().then(() => {
+            document.getElementById('fullscreenIcon').classList.remove('fa-compress');
+            document.getElementById('fullscreenIcon').classList.add('fa-expand');
+          });
+        }
+      }
+
+      // Također, slušaj izlaz iz fullscreena (da gumb promijeni ikonu)
+      document.addEventListener('fullscreenchange', () => {
+        const icon = document.getElementById('fullscreenIcon');
+        if (document.fullscreenElement) {
+          icon.classList.remove('fa-expand');
+          icon.classList.add('fa-compress');
+        } else {
+          icon.classList.remove('fa-compress');
+          icon.classList.add('fa-expand');
+        }
+      });
+
+
+    // Dark mode
+    function toggleDark() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('dark', document.body.classList.contains('dark'));
+    }
+    if(localStorage.getItem('dark')==='true') document.body.classList.add('dark');
+
+    // Navigation
+    function showSection(section) {
+      ['overview','finance','clients','employees','calendar','equipment'].forEach(s=>{
+        document.getElementById(s+'Section').classList.toggle('hidden', s!==section);
+      });
+      document.getElementById('sectionTitle').innerText = {
+        overview:'Pregled', finance:'Financije', clients:'Klijenti', employees:'Zaposlenici', calendar:'Kalendar', equipment:'Oprema'
+      }[section];
+      if(section==='finance') { renderFinanceTable(); updateFinance(); }
+      updateKPIs();
+    }
+
+    // Export CSV
+    function exportTableToCSV(filename, tableId) {
+      const rows = Array.from(document.querySelectorAll('#'+tableId+' tr'));
+      const csv = rows.map(row=>{
+        const cells = Array.from(row.querySelectorAll('th,td'));
+        return cells.map(cell=>"${cell.innerText.replace(/"/g,'""')}").join(',');
+      }).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const link = document.createElement('a');
+      link.download = filename; link.href = URL.createObjectURL(blob);
+      link.click();
+    }
+    function exportCurrentSection() {
+      const sec = document.getElementById('sectionTitle').innerText.toLowerCase();
+      if(sec==='financije' || sec==='financije' ) exportTableToCSV('finance.csv','financeTable');
+      else if(sec==='klijenti') exportTableToCSV('clients.csv','clientsTable');
+      else if(sec==='zaposlenici') exportTableToCSV('employees.csv','employeesTable');
+      else if(sec==='oprema') exportTableToCSV('equipment.csv','equipmentTable');
+      else alert('Nema podataka za izvoz u ovoj sekciji.');
+    }
+
+    // CRUD render
+    function renderClients() {
+      const tbody = document.querySelector('#clientsTable tbody'); tbody.innerHTML='';
+      clients.forEach((c,i)=>{ tbody.innerHTML+=<tr><td>${c.name}</td><td>${c.address}</td><td>${c.phone}</td><td><button onclick="removeClient(${i})">🗑️</button></td></tr>; });
+    }
+    function addClient() {
+      const name=document.getElementById('clientName').value.trim(), address=document.getElementById('clientAddress').value.trim(), phone=document.getElementById('clientPhone').value.trim();
+      if(!name||!address) return alert('Ime i adresa obavezni');
+      clients.push({name,address,phone}); localStorage.setItem('clients',JSON.stringify(clients)); closeModal('clientModal'); renderClients(); updateKPIs();
+    }
+    function removeClient(i){ if(confirm('Obrisati klijenta?')){ clients.splice(i,1); localStorage.setItem('clients',JSON.stringify(clients)); renderClients(); updateKPIs(); }}
+
+    function renderEmployees() {
+      const tbody=document.querySelector('#employeesTable tbody'); tbody.innerHTML='';
+      employees.forEach((e,i)=>{ tbody.innerHTML+=<tr><td>${e.name}</td><td>${e.role}</td><td>${e.rating}</td><td><button onclick="removeEmployee(${i})">🗑️</button></td></tr>; });
+    }
+    function addEmployee(){
+      const name=document.getElementById('employeeName').value.trim(), role=document.getElementById('employeeRole').value.trim(), rating=document.getElementById('employeeRating').value;
+      if(!name||!role) return alert('Ime i pozicija obavezni');
+      employees.push({name,role,rating}); localStorage.setItem('employees',JSON.stringify(employees)); closeModal('employeeModal'); renderEmployees(); updateKPIs();
+    }
+    function removeEmployee(i){ if(confirm('Obrisati zaposlenika?')){ employees.splice(i,1); localStorage.setItem('employees',JSON.stringify(employees)); renderEmployees(); updateKPIs(); }}
+
+    function renderEquipment(){
+      const tbody=document.querySelector('#equipmentTable tbody'); tbody.innerHTML='';
+      equipment.forEach((eq,i)=>{ tbody.innerHTML+=<tr><td>${eq.name}</td><td>${eq.status}</td><td><button onclick="removeEquipment(${i})">🗑️</button></td></tr>; });
+    }
+    function addEquipment(){
+      const name=document.getElementById('equipmentName').value.trim(), status=document.getElementById('equipmentStatus').value.trim();
+      if(!name||!status) return alert('Naziv i status obavezni');
+      equipment.push({name,status}); localStorage.setItem('equipment',JSON.stringify(equipment)); closeModal('equipmentModal'); renderEquipment(); updateKPIs();
+    }
+    function removeEquipment(i){ if(confirm('Obrisati opremu?')){ equipment.splice(i,1); localStorage.setItem('equipment',JSON.stringify(equipment)); renderEquipment(); updateKPIs(); }}
+
+    // Finance table/chart
+    function renderFinanceTable(){
+      const tbody=document.getElementById('financeRows'); tbody.innerHTML='';
+      for(let i=0;i<12;i++){
+        const net = revenue[i]-cost[i];
+        const rate = (net/hours[i]).toFixed(2);
+        tbody.innerHTML+=<tr>
+          <td class="px-2 py-1">${months[i]}</td>
+          <td class="px-2 py-1">${buildings[i]}</td>
+          <td class="px-2 py-1">${hours[i]}</td>
+          <td class="px-2 py-1"><input id="rev${i}" type="number" class="w-20 border rounded px-1" value="${revenue[i]}"></td>
+          <td class="px-2 py-1"><input id="cost${i}" type="number" class="w-20 border rounded px-1" value="${cost[i]}"></td>
+          <td class="px-2 py-1" id="net${i}">${net}</td>
+          <td class="px-2 py-1" id="rate${i}">${rate}</td>
+        </tr>;
+      }
+    }
+    function initFinance(){
+      // load or init data
+      const storedRev = JSON.parse(localStorage.getItem('revenue')||'null');
+      if(storedRev && storedRev.length===12){
+        revenue = storedRev;
+        cost = JSON.parse(localStorage.getItem('cost'));
+        buildings = JSON.parse(localStorage.getItem('buildings')||JSON.stringify(initBuildings));
+        hours = JSON.parse(localStorage.getItem('hours')||JSON.stringify(initHours));
+      } else {
+        revenue = initRevenue.slice(); cost = initCost.slice();
+        buildings = initBuildings.slice(); hours = initHours.slice();
+        localStorage.setItem('revenue',JSON.stringify(revenue));
+        localStorage.setItem('cost',JSON.stringify(cost));
+        localStorage.setItem('buildings',JSON.stringify(buildings));
+        localStorage.setItem('hours',JSON.stringify(hours));
+      }
+      renderFinanceTable();
+      // charts
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      financeChart = new Chart(ctx,{
+        type:'line',
+        data:{labels:months,datasets:[
+          {label:'Prihod',data:revenue,borderWidth:2,tension:0.3},
+          {label:'Trošak',data:cost,borderWidth:2,tension:0.3},
+          {label:'Neto',data:revenue.map((v,i)=>v-cost[i]),borderWidth:2,tension:0.3}
+        ]},
+        options:{responsive:true,scales:{y:{beginAtZero:true}}}
+      });
+      const ctx2 = document.getElementById('hourlyChart').getContext('2d');
+      hourlyChart = new Chart(ctx2,{
+        type:'bar',
+        data:{labels:months,datasets:[
+          {label:'Satnica',data:hours,borderWidth:1},
+          {label:'Efektivna satnica',data:months.map((_,i)=>((revenue[i]-cost[i])/hours[i]).toFixed(2)),borderWidth:1}
+        ]},
+        options:{responsive:true,scales:{y:{beginAtZero:true}}}
+      });
+    }
+    function updateFinance(){
+      for(let i=0;i<12;i++){
+        revenue[i] = Number(document.getElementById('rev'+i).value);
+        cost[i]    = Number(document.getElementById('cost'+i).value);
+        const net = revenue[i] - cost[i];
+        const rate = (net/hours[i]).toFixed(2);
+        document.getElementById('net'+i).innerText = net;
+        document.getElementById('rate'+i).innerText = rate;
+      }
+      financeChart.data.datasets[0].data = revenue;
+      financeChart.data.datasets[1].data = cost;
+      financeChart.data.datasets[2].data = revenue.map((v,i)=>v-cost[i]);
+      financeChart.update();
+      hourlyChart.data.datasets[1].data = months.map((_,i)=>((revenue[i]-cost[i])/hours[i]).toFixed(2));
+      hourlyChart.update();
+      saveData();
+    }
+
+    // Calendar
+    function initCalendar(){
+      const el = document.getElementById('calendar');
+      calendarInstance = new FullCalendar.Calendar(el,{
+        initialView:'dayGridMonth',
+        height:600,
+        selectable:true,
+        headerToolbar:{left:'title',center:'prev,next today',right:'dayGridMonth,timeGridWeek'},
+        dateClick:info=>{const t=prompt('Naziv zadatka:');if(t){calendarInstance.addEvent({title:t,start:info.dateStr});updateKPIs();}}
+      });
+      calendarInstance.render();
+    }
+
+    // KPIs
+    function updateKPIs(){
+      document.getElementById('kpiClients').innerText = clients.length;
+      document.getElementById('kpiEmployees').innerText = employees.length;
+      document.getElementById('kpiTasks').innerText = calendarInstance.getEvents().length;
+      document.getElementById('kpiRevenue').innerText = revenue.reduce((a,b)=>a+b,0);
+      document.getElementById('kpiBuildings').innerText = buildings.reduce((a,b)=>a+b,0);
+      const avg = (revenue.reduce((a,b,i)=>a+((b-cost[i])/hours[i]),0)/12).toFixed(2);
+      document.getElementById('kpiAvgHourly').innerText = avg;
+    }
+
+    // Modals
+    function openModal(id){document.getElementById('overlay').classList.remove('hidden');document.getElementById(id).classList.remove('hidden');}
+    function closeModal(id){document.getElementById('overlay').classList.add('hidden');document.getElementById(id).classList.add('hidden');}
+
+    // Init
+    document.addEventListener('DOMContentLoaded',()=>{
+      renderClients(); renderEmployees(); renderEquipment();
+      initFinance(); initCalendar(); showSection('overview');
+    });
+  
+    // Load initial data
+    function loadInitialData() {
+      if (!confirm('Učitati inicijalne testne podatke? Ovo će prebrisati postojeće.')) return;
+      revenue = initRevenue.slice();
+      cost = initCost.slice();
+      buildings = initBuildings.slice();
+      hours = initHours.slice();
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+    // Reset all data to zero
+    function resetData() {
+      if (!confirm('Resetirati sve podatke na nulu?')) return;
+      revenue = Array(12).fill(0);
+      cost = Array(12).fill(0);
+      buildings = Array(12).fill(0);
+      hours = Array(12).fill(0);
+      localStorage.setItem('revenue', JSON.stringify(revenue));
+      localStorage.setItem('cost', JSON.stringify(cost));
+      localStorage.setItem('buildings', JSON.stringify(buildings));
+      localStorage.setItem('hours', JSON.stringify(hours));
+      renderFinanceTable(); updateFinance(); updateKPIs();
+    }
+
+  </script>
+</body>
+</html>
+
+
+services:
+  - type: web
+    name: stih-api
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: gunicorn app:app
